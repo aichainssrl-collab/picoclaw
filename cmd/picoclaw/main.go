@@ -518,13 +518,15 @@ func simpleInteractiveMode(agentLoop *agent.AgentLoop, sessionKey string) {
 }
 
 func gatewayCmd() {
-	// Check for --debug flag
+	// Check for flags
 	args := os.Args[2:]
-	for _, arg := range args {
+	for i, arg := range args {
 		if arg == "--debug" || arg == "-d" {
 			logger.SetLevel(logger.DEBUG)
 			fmt.Println("🔍 Debug mode enabled")
-			break
+		}
+		if (arg == "--config" || arg == "-c") && i+1 < len(args) {
+			os.Setenv("PICOCLAW_CONFIG", args[i+1])
 		}
 	}
 
@@ -984,6 +986,9 @@ func authStatusCmd() {
 }
 
 func getConfigPath() string {
+	if envPath := os.Getenv("PICOCLAW_CONFIG"); envPath != "" {
+		return envPath
+	}
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".picoclaw", "config.json")
 }

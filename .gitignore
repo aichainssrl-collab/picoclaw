@@ -44,3 +44,8 @@ tasks/
 
 # Added by goreleaser init:
 dist/
+workspace/
+news.json
+
+# Logs
+*.log

@@ -162,6 +162,14 @@ type ChannelsConfig struct {
 	Slack    SlackConfig    `json:"slack"`
 	LINE     LINEConfig     `json:"line"`
 	OneBot   OneBotConfig   `json:"onebot"`
+	WebChat  WebChatConfig  `json:"webchat"`
+}
+
+type WebChatConfig struct {
+	Enabled   bool                `json:"enabled" env:"PICOCLAW_CHANNELS_WEBCHAT_ENABLED"`
+	Host      string              `json:"host" env:"PICOCLAW_CHANNELS_WEBCHAT_HOST"`
+	Port      int                 `json:"port" env:"PICOCLAW_CHANNELS_WEBCHAT_PORT"`
+	AllowFrom FlexibleStringSlice `json:"allow_from" env:"PICOCLAW_CHANNELS_WEBCHAT_ALLOW_FROM"`
 }
 
 type WhatsAppConfig struct {
@@ -398,6 +406,12 @@ func DefaultConfig() *Config {
 				ReconnectInterval:  5,
 				GroupTriggerPrefix: []string{},
 				AllowFrom:          FlexibleStringSlice{},
+			},
+			WebChat: WebChatConfig{
+				Enabled:   true,
+				Host:      "0.0.0.0",
+				Port:      4001,
+				AllowFrom: FlexibleStringSlice{},
 			},
 		},
 		Providers: ProvidersConfig{

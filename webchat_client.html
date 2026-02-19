@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aichain</title>
+    <link rel="icon" type="image/png" href="/assets/clawdchat-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: 'Source Sans Pro', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; color: #333; }
+        h1 { font-family: 'Playfair Display', serif; color: #111; text-align: center; grid-column: 1 / -1; font-weight: 900; font-size: 3em; margin-bottom: 0.2em; letter-spacing: -1px; }
+        
+        /* Layout Grid */
+        #main-layout { display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-bottom: 40px; }
+        
+        /* Chat Area */
+        #chat-section { display: flex; flex-direction: column; }
+        #chat-container { border: 1px solid #ddd; height: 500px; overflow-y: scroll; padding: 20px; margin-bottom: 15px; background-color: #fff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .message { margin-bottom: 12px; padding: 12px 18px; border-radius: 4px; max-width: 80%; line-height: 1.6; font-size: 1.05em; }
+        .user { background-color: #222; color: white; margin-left: auto; }
+        .bot { background-color: #f0f0f0; color: #111; margin-right: auto; }
+        #input-container { display: flex; gap: 10px; }
+        #message-input { flex-grow: 1; padding: 15px; border: 1px solid #ccc; border-radius: 4px; outline: none; font-family: inherit; font-size: 1em; }
+        #message-input:focus { border-color: #333; }
+        button { padding: 10px 30px; background-color: #222; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9em; transition: background-color 0.2s; }
+        button:hover { background-color: #000; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { text-align: center; margin-bottom: 20px; font-size: 0.9em; color: #666; grid-column: 1 / -1; font-style: italic; font-family: 'Playfair Display', serif; }
+
+        /* Crypto Sidebar */
+        #crypto-sidebar { background: #fff; padding: 20px; border: 1px solid #ddd; height: fit-content; }
+        #crypto-sidebar h2 { font-family: 'Playfair Display', serif; margin-top: 0; color: #111; font-size: 1.5em; border-bottom: 3px double #ddd; padding-bottom: 10px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .crypto-table { width: 100%; border-collapse: collapse; font-size: 0.95em; font-family: 'Source Sans Pro', sans-serif; }
+        .crypto-table th { text-align: left; padding: 10px 5px; color: #444; font-weight: 700; border-bottom: 1px solid #111; text-transform: uppercase; font-size: 0.8em; }
+        .crypto-table td { padding: 12px 5px; border-bottom: 1px solid #eee; }
+        .crypto-table tr:last-child td { border-bottom: none; }
+        .price-up { color: #2e7d32; font-weight: 600; }
+        .price-down { color: #c62828; font-weight: 600; }
+        .market-summary { margin-top: 25px; font-size: 0.9em; color: #555; border-top: 3px double #ddd; padding-top: 15px; }
+        .market-summary div { margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .market-summary strong { color: #111; }
+
+        /* News Section - Newspaper Style */
+        #news-container { margin-top: 20px; padding-top: 20px; grid-column: 1 / -1; border-top: 1px solid #ccc; }
+        #news-header { text-align: center; margin-bottom: 40px; position: relative; }
+        #news-header h2 { font-family: 'Playfair Display', serif; font-size: 2.5em; font-weight: 900; color: #111; margin: 0; text-transform: uppercase; letter-spacing: 2px; display: inline-block; background: #f4f4f4; padding: 0 20px; position: relative; z-index: 1; }
+        #news-header::after { content: ''; position: absolute; top: 50%; left: 0; right: 0; border-bottom: 3px double #ccc; z-index: 0; }
+        
+        /* News Tabs */
+        #news-tabs { display: flex; justify-content: center; margin-bottom: 30px; gap: 10px; flex-wrap: wrap; }
+        .news-tab { 
+            background: transparent; 
+            border: none; 
+            border-bottom: 2px solid transparent; 
+            padding: 8px 16px; 
+            font-family: 'Source Sans Pro', sans-serif; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            color: #888; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+            font-size: 0.9em;
+        }
+        .news-tab:hover { color: #111; }
+        .news-tab.active { 
+            color: #111; 
+            border-bottom: 2px solid #c62828; 
+        }
+
+        #news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; }
+        
+        .news-card { background: transparent; padding: 0; display: flex; flex-direction: column; border-right: 1px solid #ddd; padding-right: 30px; }
+        .news-card:nth-child(3n) { border-right: none; padding-right: 0; }
+        .news-card:last-child { border-right: none; }
+        
+        .news-meta { font-family: 'Source Sans Pro', sans-serif; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; font-weight: 600; }
+        .news-source { color: #c62828; font-weight: 700; margin-right: 10px; }
+        
+        .news-title { font-family: 'Playfair Display', serif; font-weight: 700; margin-bottom: 12px; font-size: 1.4em; line-height: 1.2; color: #111; }
+        .news-title a { text-decoration: none; color: #111; transition: color 0.2s; }
+        .news-title a:hover { color: #555; text-decoration: underline; }
+        
+        .news-snippet { font-family: 'Source Sans Pro', sans-serif; font-size: 1em; color: #333; line-height: 1.6; flex-grow: 1; margin-bottom: 15px; }
+        
+        .news-footer { margin-top: auto; padding-top: 10px; text-align: left; }
+        .read-more { font-family: 'Source Sans Pro', sans-serif; font-size: 0.85em; color: #111; text-decoration: none; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid #111; padding-bottom: 2px; transition: all 0.2s; }
+        .read-more:hover { background-color: #111; color: #fff; text-decoration: none; }
+
+        /* Header Navigation */
+        #site-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 30px;
+        }
+        #site-nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+            margin: 0;
+            padding: 0;
+        }
+        #site-nav li a {
+            text-decoration: none;
+            color: #555;
+            font-family: 'Source Sans Pro', sans-serif;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+            transition: color 0.2s;
+        }
+        #site-nav li a:hover, #site-nav li a.active {
+            color: #111;
+            border-bottom: 2px solid #c62828;
+        }
+
+        /* Analytics Section */
+        #analytics-container {
+            display: none; /* Hidden by default */
+            grid-column: 1 / -1;
+            background: #fff;
+            padding: 30px;
+            border: 1px solid #ddd;
+            margin-bottom: 40px;
+        }
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .analytics-table th, .analytics-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .analytics-table th {
+            background-color: #f9f9f9;
+            font-weight: 700;
+        }
+
+        /* Markdown Styles within Message */
+        .message h1, .message h2, .message h3, .message h4 { margin-top: 10px; margin-bottom: 8px; font-weight: 700; color: inherit; }
+        .message h1 { font-size: 1.5em; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; }
+        .message h2 { font-size: 1.3em; }
+        .message h3 { font-size: 1.1em; }
+        .message p { margin-bottom: 10px; }
+        .message ul, .message ol { margin-left: 20px; margin-bottom: 10px; }
+        .message li { margin-bottom: 5px; }
+        .message code { background-color: rgba(0,0,0,0.1); padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em; }
+        .message pre { background-color: #2d2d2d; color: #ccc; padding: 10px; border-radius: 4px; overflow-x: auto; margin-bottom: 10px; }
+        .message pre code { background-color: transparent; color: inherit; padding: 0; }
+        .message blockquote { border-left: 4px solid #ccc; margin-left: 0; padding-left: 15px; color: #666; font-style: italic; }
+        .message a { color: #007bff; text-decoration: none; }
+        .message a:hover { text-decoration: underline; }
+
+        @media (max-width: 900px) {
+            .news-card { border-right: none; padding-right: 0; border-bottom: 1px solid #ddd; padding-bottom: 30px; }
+            .news-card:last-child { border-bottom: none; }
+        }
+        @media (max-width: 768px) {
+            #main-layout { grid-template-columns: 1fr; }
+            #crypto-sidebar { order: 2; }
+            #chat-section { order: 1; }
+            h1 { font-size: 2em; }
+        }
+    </style>
+</head>
+<body>
+    <header id="site-header">
+        <div style="font-family: 'Playfair Display', serif; font-size: 1.5em; font-weight: 900; letter-spacing: -1px;">AIChain</div>
+        <nav id="site-nav">
+            <ul>
+                <li><a href="#" onclick="showSection('home')" class="active" id="nav-home">Home</a></li>
+                <li><a href="#" onclick="showSection('analytics')" id="nav-analytics">Analytics</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <h1>Aichain Solutions Daily</h1>
+    <div id="status">Connecting...</div>
+
+    <!-- Analytics Section -->
+    <div id="analytics-container">
+        <h2 style="font-family: 'Playfair Display', serif; margin-bottom: 20px;">Social Media Analytics</h2>
+        <div id="analytics-content">Loading data...</div>
+    </div>
+
+    <div id="main-layout">
+        <!-- Sidebar -->
+        <div id="crypto-sidebar">
+            <h2>Crypto Market</h2>
+            <div id="crypto-content">Loading...</div>
+        </div>
+
+        <!-- Chat Section -->
+        <div id="chat-section">
+            <div id="chat-container"></div>
+            <div id="input-container">
+                <input type="text" id="message-input" placeholder="Type a message..." disabled>
+                <button id="send-btn" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="news-container">
+        <div id="news-header">
+            <h2>The Daily Chronicle</h2>
+            <div id="news-last-updated" style="font-family: 'Source Sans Pro', sans-serif; font-size: 0.9em; color: #666; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px;"></div>
+        </div>
+        
+        <div id="news-tabs">
+            <button class="news-tab active" data-category="All">All News</button>
+            <button class="news-tab" data-category="World">World</button>
+            <button class="news-tab" data-category="Tech">Tech & AI</button>
+            <button class="news-tab" data-category="Business">Business</button>
+        </div>
+
+        <div id="news-grid">Loading top stories...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // Connect to WebSocket
+        // Navigation Logic
+    function showSection(section) {
+        const homeLayout = document.getElementById('main-layout');
+        const analyticsContainer = document.getElementById('analytics-container');
+        const navHome = document.getElementById('nav-home');
+        const navAnalytics = document.getElementById('nav-analytics');
+
+        if (section === 'home') {
+            homeLayout.style.display = 'grid';
+            analyticsContainer.style.display = 'none';
+            navHome.classList.add('active');
+            navAnalytics.classList.remove('active');
+        } else if (section === 'analytics') {
+            homeLayout.style.display = 'none';
+            analyticsContainer.style.display = 'block';
+            analyticsContainer.style.gridColumn = '1 / -1'; // Ensure it spans full width
+            navHome.classList.remove('active');
+            navAnalytics.classList.add('active');
+            loadAnalytics();
+        }
+    }
+
+    async function loadAnalytics() {
+        const container = document.getElementById('analytics-content');
+        container.innerHTML = 'Loading latest metrics...';
+        
+        try {
+            const response = await fetch('/api/analytics');
+            if (!response.ok) throw new Error('Failed to fetch analytics');
+            const data = await response.json();
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>No analytics data available yet.</p>';
+                return;
+            }
+
+            // Sort data by date descending
+            data.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            let html = `
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Facebook Followers</th>
+                            <th>Instagram Followers</th>
+                            <th>Instagram Posts</th>
+                            <th>LinkedIn Followers</th>
+                            <th>YouTube Subscribers</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(day => {
+                html += `
+                    <tr>
+                        <td>${day.date}</td>
+                        <td>${day.facebook_followers}</td>
+                        <td>${day.instagram_followers}</td>
+                        <td>${day.instagram_posts}</td>
+                        <td>${day.linkedin_followers}</td>
+                        <td>${day.youtube_subscribers}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+            container.innerHTML = '<p style="color:red">Error loading analytics data.</p>';
+        }
+    }
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+        let ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            statusDiv.textContent = 'Connected';
+            statusDiv.style.color = 'green';
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+        };
+
+        ws.onclose = () => {
+            statusDiv.textContent = 'Disconnected';
+            statusDiv.style.color = 'red';
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'message') {
+                appendMessage('bot', data.content);
+            }
+        };
+
+        function appendMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            // Use marked to render Markdown
+            msgDiv.innerHTML = marked.parse(text);
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (text) {
+                ws.send(JSON.stringify({ content: text }));
+                appendMessage('user', text);
+                messageInput.value = '';
+            }
+        }
+
+        sendBtn.onclick = sendMessage;
+        messageInput.onkeypress = (e) => {
+            if (e.key === 'Enter') sendMessage();
+        };
+
+        // Global news data
+        let allNewsData = [];
+        let currentCategory = 'All';
+
+        // Categorize helper
+        function categorizeItem(item) {
+            const src = (item.source || '').toLowerCase();
+            const title = (item.title || '').toLowerCase();
+            const summary = (item.summary || '').toLowerCase();
+            const text = title + " " + summary;
+
+            // World / Politics
+            if (src.includes('nyt') || src.includes('bbc') || src.includes('world') || text.includes('president') || text.includes('war') || text.includes('gaza') || text.includes('ukraine')) {
+                return 'World';
+            }
+            
+            // Tech / AI / Digital
+            if (src.includes('ai4business') || src.includes('agenda digitale') || src.includes('zerouno') || src.includes('corcom') || text.includes('ai ') || text.includes('tech') || text.includes('digital') || text.includes('cyber') || text.includes('cloud') || text.includes('software')) {
+                return 'Tech';
+            }
+
+            // Business (fallback for specific sources or keywords)
+            if (text.includes('market') || text.includes('economy') || text.includes('stock') || text.includes('trade')) {
+                return 'Business';
+            }
+
+            // Default fallback based on source if not matched above
+            if (src.includes('nyt') || src.includes('bbc')) return 'World';
+
+            return 'General'; // or put in Tech if that's the main focus of this app? Let's use General.
+        }
+
+        function renderNews(category) {
+            const newsGrid = document.getElementById('news-grid');
+            newsGrid.innerHTML = '';
+            
+            const filtered = category === 'All' 
+                ? allNewsData 
+                : allNewsData.filter(item => item._category === category || (category === 'Business' && item._category === 'General')); // Group General with Business or show separately? Let's just filter exact matches or mapped ones.
+
+            if (filtered.length === 0) {
+                newsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; font-style: italic; color: #666;">No news in this section today.</p>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'news-card';
+                
+                // Format date if possible
+                let dateStr = "";
+                if (item.published) {
+                    try {
+                        const date = new Date(item.published);
+                        dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                    } catch(e) { dateStr = item.published; }
+                }
+
+                card.innerHTML = `
+                    <div class="news-meta">
+                        <span class="news-source" style="color: ${getCategoryColor(item._category)}">${item._category} | ${item.source || 'Source'}</span>
+                        <span class="news-date">${dateStr}</span>
+                    </div>
+                    <div class="news-title"><a href="${item.link}" target="_blank">${item.title}</a></div>
+                    <div class="news-snippet">${item.summary || ''}</div>
+                    <div class="news-footer">
+                        <a href="${item.link}" target="_blank" class="read-more">Read Article</a>
+                    </div>
+                `;
+                newsGrid.appendChild(card);
+            });
+        }
+
+        function getCategoryColor(cat) {
+            switch(cat) {
+                case 'World': return '#c62828'; // Red
+                case 'Tech': return '#1976d2'; // Blue
+                case 'Business': return '#2e7d32'; // Green
+                default: return '#555';
+            }
+        }
+
+        // Tab Handling
+        document.querySelectorAll('.news-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update UI
+                document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Filter
+                currentCategory = tab.getAttribute('data-category');
+                renderNews(currentCategory);
+            });
+        });
+
+        // Fetch News
+        fetch('/api/news')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                const lastUpdatedEl = document.getElementById('news-last-updated');
+                
+                if (data && data.length > 0 && data[0].fetched_at) {
+                    const lastFetch = new Date(data[0].fetched_at);
+                    lastUpdatedEl.textContent = "Last Updated: " + lastFetch.toLocaleString();
+                }
+                
+                if (!data || !Array.isArray(data)) {
+                     document.getElementById('news-grid').innerHTML = '<p>No news available.</p>';
+                     return;
+                }
+
+                // Process and categorize
+                allNewsData = data.map(item => {
+                    item._category = categorizeItem(item);
+                    return item;
+                }).sort((a, b) => {
+                    // Sort by date descending (newest first)
+                    const dateA = a.published ? new Date(a.published) : new Date(0);
+                    const dateB = b.published ? new Date(b.published) : new Date(0);
+                    return dateB - dateA;
+                });
+
+                // Initial render
+                renderNews('All');
+            })
+            .catch(err => {
+                console.error('Failed to load news:', err);
+                document.getElementById('news-grid').innerHTML = '<p>Failed to load news. Please try again later.</p>';
+            });
+
+        // Fetch Crypto Data
+        fetch('/api/crypto')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                const cryptoContent = document.getElementById('crypto-content');
+                if (!data || !data.currencies) {
+                    cryptoContent.innerHTML = '<p>No data available</p>';
+                    return;
+                }
+
+                let html = '<table class="crypto-table"><thead><tr><th>Asset</th><th>Price</th><th>24h</th></tr></thead><tbody>';
+                
+                data.currencies.forEach(coin => {
+                    const isUp = coin.change_24h.includes('+');
+                    const changeClass = isUp ? 'price-up' : 'price-down';
+                    html += `
+                        <tr>
+                            <td><strong>${coin.symbol}</strong></td>
+                            <td>${coin.price}</td>
+                            <td class="${changeClass}">${coin.change_24h}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                
+                html += `
+                    <div class="market-summary">
+                        <div><span>Total Cap:</span> <strong>${data.total_market_cap}</strong></div>
+                        <div><span>BTC Dom:</span> <strong>${data.market_dominance_btc}</strong></div>
+                        <div style="margin-top: 10px; font-size: 0.8em; text-align: right;">Updated: ${new Date(data.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                `;
+
+                cryptoContent.innerHTML = html;
+            })
+            .catch(err => {
+                console.error('Failed to load crypto:', err);
+                document.getElementById('crypto-content').innerHTML = '<p>Failed to load market data</p>';
+            });
+    </script>
+</body>
+</html>
