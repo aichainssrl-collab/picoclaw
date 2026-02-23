@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Imported Prompt",
+    "category": "Import",
+    "description": "Imported via API",
+    "content": "Imported content {summary}"
+  }
+]

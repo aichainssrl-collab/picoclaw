@@ -591,7 +591,7 @@ func gatewayCmd() {
 		return tools.SilentResult(response)
 	})
 
-	channelManager, err := channels.NewManager(cfg, msgBus)
+	channelManager, err := channels.NewManager(cfg, msgBus, provider)
 	if err != nil {
 		fmt.Printf("Error creating channel manager: %v\n", err)
 		os.Exit(1)
@@ -1001,6 +1001,14 @@ func getConfigPath() string {
 
 func setupCronTool(agentLoop *agent.AgentLoop, msgBus *bus.MessageBus, workspace string, restrict bool, execTimeout time.Duration, config *config.Config) *cron.CronService {
 	cronStorePath := filepath.Join(workspace, "cron", "jobs.json")
+
+	// Ensure cron directory exists
+	if err := os.MkdirAll(filepath.Dir(cronStorePath), 0755); err != nil {
+		logger.ErrorCF("cron", "Failed to create cron directory", map[string]interface{}{
+			"path":  filepath.Dir(cronStorePath),
+			"error": err.Error(),
+		})
+	}
 
 	// Create cron service
 	cronService := cron.NewCronService(cronStorePath, nil)

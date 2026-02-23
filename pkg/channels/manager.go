@@ -15,12 +15,14 @@ import (
 	"github.com/sipeed/picoclaw/pkg/config"
 	"github.com/sipeed/picoclaw/pkg/constants"
 	"github.com/sipeed/picoclaw/pkg/logger"
+	"github.com/sipeed/picoclaw/pkg/providers"
 )
 
 type Manager struct {
 	channels     map[string]Channel
 	bus          *bus.MessageBus
 	config       *config.Config
+	provider     providers.LLMProvider
 	dispatchTask *asyncTask
 	mu           sync.RWMutex
 }
@@ -29,11 +31,12 @@ type asyncTask struct {
 	cancel context.CancelFunc
 }
 
-func NewManager(cfg *config.Config, messageBus *bus.MessageBus) (*Manager, error) {
+func NewManager(cfg *config.Config, messageBus *bus.MessageBus, provider providers.LLMProvider) (*Manager, error) {
 	m := &Manager{
 		channels: make(map[string]Channel),
 		bus:      messageBus,
 		config:   cfg,
+		provider: provider,
 	}
 
 	if err := m.initChannels(); err != nil {
@@ -61,7 +64,7 @@ func (m *Manager) initChannels() error {
 
 	if m.config.Channels.WebChat.Enabled {
 		logger.DebugC("channels", "Attempting to initialize WebChat channel")
-		webchat, err := NewWebChatChannel(m.config.Channels.WebChat, m.bus, m.config.WorkspacePath())
+		webchat, err := NewWebChatChannel(m.config.Channels.WebChat, m.bus, m.config.WorkspacePath(), m.provider)
 		if err != nil {
 			logger.ErrorCF("channels", "Failed to initialize WebChat channel", map[string]interface{}{
 				"error": err.Error(),

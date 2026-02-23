@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// Verifica alcuni valori di default o dal file di esempio
 	// Nota: questi valori dipendono dal contenuto di config.example.json
-	assert.Equal(t, "glm-4.7", cfg.Agents.Defaults.Model)
+	assert.Equal(t, "gemini-2.0-flash", cfg.Agents.Defaults.Model)
 	assert.Equal(t, 8192, cfg.Agents.Defaults.MaxTokens)
 	
 	// Verifica che le variabili d'ambiente vengano caricate (se impostate nel .env)

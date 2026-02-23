@@ -3,32 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aichain</title>
+    <title>Aichian Dashboard</title>
     <link rel="icon" type="image/png" href="/assets/clawdchat-icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <!-- Import Web Components -->
-    <script src="assets/js/components/weather-widget.js?v=2"></script>
-    <script src="assets/js/components/news-feed.js?v=3"></script>
-    <script src="assets/js/components/crypto-ticker.js?v=3"></script>
-    <script src="assets/js/components/chat-widget.js?v=3"></script>
-    <script src="assets/js/webchat.js?v=3"></script>
+    <script src="assets/js/components/weather-widget.js?v=4"></script>
+    <script src="assets/js/components/news-feed.js?v=4"></script>
+    <script src="assets/js/components/crypto-ticker.js?v=4"></script>
+    <script src="assets/js/components/chat-widget.js?v=4"></script>
+    <script src="assets/js/webchat.js?v=4"></script>
+
+    <style>
+        /* Add some styles for the new navigation links if needed, 
+           inheriting from style.css but ensuring they look good */
+        .nav-external {
+            color: #0077b5; /* LinkedIn color */
+        }
+    </style>
 </head>
 <body>
     <div id="site-header">
-        <h1>AIChain</h1>
+        <h1>
+            <span style="font-size: 24px;">🦀</span> 
+            Aichian Dashboard
+        </h1>
         <nav id="site-nav">
             <ul>
                 <li><a onclick="navigateTo('home')" id="nav-home" class="active">Home</a></li>
                 <li><a onclick="navigateTo('news')" id="nav-news">News</a></li>
                 <li><a onclick="navigateTo('analytics')" id="nav-analytics">Analytics</a></li>
+                <!-- External Links -->
+                <li><a href="/linkedin/cms" class="nav-external">LinkedIn CMS</a></li>
+                <li><a href="/crypto" class="nav-external">Crypto</a></li>
             </ul>
         </nav>
     </div>
 
-    <h1>Aichain Solutions Daily</h1>
+    <!-- <h1>Aichain Solutions Daily</h1> -->
 
     <div id="app-layout">
         <!-- Main Content Area -->
@@ -37,12 +51,27 @@
             <div id="view-home">
                 <crypto-ticker></crypto-ticker>
                 <div style="margin-top: 40px; text-align: center;">
-                    <h3 style="font-family: 'Playfair Display', serif;">Welcome to AIChain Dashboard</h3>
+                    <h3 style="font-family: 'Playfair Display', serif;">Welcome to Aichian Dashboard</h3>
                     <p>Select a section from the menu above to begin.</p>
+                    
+                    <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
+                        <a href="/linkedin/cms" style="padding: 15px 30px; background: #0077b5; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            Manage LinkedIn Posts
+                        </a>
+                        <a href="/crypto" style="padding: 15px 30px; background: #f7931a; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            Crypto Dashboard
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Show News Preview on Home as well -->
+                <div style="margin-top: 50px;">
+                    <h2>Latest News</h2>
+                    <news-feed></news-feed>
                 </div>
             </div>
 
-            <!-- News View -->
+            <!-- News View (Full) -->
             <div id="view-news" style="display: none;">
                 <news-feed></news-feed>
             </div>
@@ -68,7 +97,11 @@
             document.getElementById('view-analytics').style.display = 'none';
 
             // Reset Nav
-            document.querySelectorAll('#site-nav a').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#site-nav a').forEach(el => {
+                if (!el.getAttribute('href')) { // Only reset internal links
+                    el.classList.remove('active');
+                }
+            });
 
             // Show selected view
             if (view === 'home') {

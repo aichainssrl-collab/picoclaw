@@ -100,6 +100,7 @@ func (p *Provider) Chat(ctx context.Context, messages []Message, tools []ToolDef
 
 	req.Header.Set("Content-Type", "application/json")
 	if p.apiKey != "" {
+		// Google Gemini OpenAI compatibility layer uses Bearer token
 		req.Header.Set("Authorization", "Bearer "+p.apiKey)
 	}
 

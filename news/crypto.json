@@ -1,0 +1,17 @@
+{
+    "bitcoin": {
+        "usd": 65000,
+        "eur": 60000,
+        "last_updated_at": 1719316800
+    },
+    "ethereum": {
+        "usd": 3500,
+        "eur": 3200,
+        "last_updated_at": 1719316800
+    },
+    "solana": {
+        "usd": 150,
+        "eur": 140,
+        "last_updated_at": 1719316800
+    }
+}

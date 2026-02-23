@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn CMS - Aichian</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1600px; margin: 0 auto; padding: 0; background: #f5f5f5; }
+        .header { background: white; padding: 15px 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+        .nav-menu { display: flex; gap: 20px; }
+        .nav-link { text-decoration: none; color: #666; font-weight: 500; padding: 5px 10px; border-radius: 4px; transition: all 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #0077b5; background: #e8f4f9; }
+        .container { display: flex; gap: 20px; padding: 20px; margin-top: 10px; }
+        .sidebar { width: 300px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0; height: calc(100vh - 120px); overflow-y: auto; position: sticky; top: 90px; }
+        .main { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-width: 0; }
+        h1, h2 { color: #0077b5; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        textarea { height: 150px; resize: vertical; }
+        button { background: #0077b5; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #006097; }
+        button.secondary { background: #6c757d; }
+        button.success { background: #28a745; }
+        .item-list { list-style: none; padding: 0; }
+        .item-list li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
+        .item-list li:hover { background: #f8f9fa; }
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 12px; color: white; }
+        .status-DRAFT { background: #6c757d; }
+        .status-PENDING_APPROVAL { background: #ffc107; color: black; }
+        .status-APPROVED { background: #28a745; }
+        .loading { opacity: 0.5; pointer-events: none; }
+        #preview-section { display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+        
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; position: static; }
+            .header { padding: 10px 15px; flex-direction: column; gap: 10px; align-items: flex-start; }
+            .nav-menu { width: 100%; overflow-x: auto; padding-bottom: 5px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>
+            <span style="font-size: 24px;">🦀</span> 
+            Aichian CMS
+        </h1>
+        <nav class="nav-menu">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/linkedin/cms" class="nav-link active">LinkedIn CMS</a>
+            <a href="/crypto" class="nav-link">Crypto</a>
+            <a href="#" onclick="openPromptManager(); return false;" class="nav-link">Prompts</a>
+            <a href="https://www.linkedin.com" target="_blank" class="nav-link">Vai a LinkedIn</a>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <div class="sidebar">
+            <h2>Post Recenti</h2>
+            <ul id="item-list" class="item-list">
+                <li>Caricamento...</li>
+            </ul>
+            <button onclick="createNew()" class="secondary" style="width: 100%; margin-top: 10px;">Nuovo Post</button>
+            <button onclick="openPromptManager()" class="secondary" style="width: 100%; margin-top: 10px; background: #6f42c1;">📚 Gestione Prompt</button>
+        </div>
+        
+        <div class="main">
+            <div id="input-section">
+                <h2>1. Input Contenuto</h2>
+                <div class="form-group">
+                    <label>URL Notizia (Opzionale)</label>
+                    <input type="text" id="url-input" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Testo / Appunti</label>
+                    <textarea id="text-input" placeholder="Incolla qui il testo o descrivi l'argomento..."></textarea>
+                </div>
+                <button onclick="analyzeContent()">Analizza & Estrai Topic</button>
+            </div>
+
+            <div id="analysis-section" style="display:none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                <h2>2. Analisi & Prompt</h2>
+                <div class="form-group">
+                    <label>Argomento Principale</label>
+                    <input type="text" id="topic-input">
+                </div>
+                <div class="form-group">
+                    <label>Sommario / Punti Chiave</label>
+                    <textarea id="summary-input" style="height: 100px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Seleziona Prompt</label>
+                    <select id="prompt-select" style="width: 100%; padding: 8px;">
+                        <option value="">Default (LinkedIn Standard)</option>
+                    </select>
+                </div>
+                <button onclick="generatePost()">Genera Post LinkedIn</button>
+            </div>
+
+            <div id="preview-section">
+                <h2>3. Revisione & Approvazione <span id="status-display" class="status-badge"></span></h2>
+                <input type="hidden" id="current-id">
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label style="margin:0;">Post Generato</label>
+                        <button onclick="cleanFormatting()" class="secondary" style="font-size: 12px; padding: 4px 8px; background: #6f42c1;">✨ Formatta & Pulisci</button>
+                    </div>
+                    <textarea id="post-output" style="height: 300px; font-family: monospace;" oninput="updateCharCount()"></textarea>
+                    <div style="text-align: right; font-size: 12px; color: #666;">
+                        Caratteri: <span id="char-count">0</span> (Ideale: 1300-2000)
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Media (Immagine/Video)</label>
+                    <input type="file" id="media-upload" accept="image/*,video/*" onchange="uploadMedia(this.files[0])">
+                    <input type="hidden" id="media-path">
+                    <input type="hidden" id="media-type">
+                    <input type="hidden" id="media-url">
+                    <div id="media-preview" style="margin-top: 10px; max-width: 100%; padding: 5px; min-height: 20px;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Storico Revisioni</label>
+                    <ul id="history-list" style="max-height: 100px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; list-style: none;">
+                        <li style="color: #999;">Nessuna revisione</li>
+                    </ul>
+                </div>
+
+                <div class="form-group">
+                    <label>Commenti & Feedback</label>
+                    <div id="comments-list" style="margin-bottom: 10px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd;"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="comment-input" placeholder="Aggiungi un commento..." style="flex: 1;">
+                        <button onclick="addComment()" class="secondary" style="padding: 8px 15px;">Invia</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="saveChanges()" class="secondary">Salva Bozza</button>
+                    <button onclick="updateStatus('APPROVED')" class="success">Approva</button>
+                    <button onclick="updateStatus('REJECTED')" style="background: #dc3545;">Rifiuta</button>
+                    <button onclick="deleteItem()" style="background: #6c757d; margin-left: auto;">🗑️ Elimina</button>
+                </div>
+                <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <div class="form-group">
+                        <label>Pubblica come:</label>
+                        <select id="author-select" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                            <option value="">Caricamento...</option>
+                        </select>
+                    </div>
+                    <button onclick="publishToLinkedin()" style="background: #0077b5; width: 100%;">🚀 Pubblica su LinkedIn Ora</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h2 style="font-size: 18px; margin-bottom: 15px;">Tech News</h2>
+            <div style="margin-bottom: 10px;">
+                <button onclick="loadNews()" class="secondary" style="width: 100%; font-size: 12px;">🔄 Aggiorna</button>
+            </div>
+            <ul id="news-list" class="item-list">
+                <li style="color: #666; font-style: italic;">Caricamento news...</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="prompt-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; width: 90%; max-width: 900px; height: 80vh; padding: 20px; border-radius: 8px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>📚 Libreria Prompt</h2>
+                <button onclick="closePromptManager()" style="background: transparent; color: #333; font-size: 24px; padding: 0;">&times;</button>
+            </div>
+            
+            <div style="display: flex; gap: 20px; flex: 1; min-height: 0;">
+                <div style="width: 300px; border-right: 1px solid #eee; padding-right: 20px; display: flex; flex-direction: column;">
+                    <input type="text" id="prompt-search" placeholder="Cerca prompt..." oninput="filterPrompts()" style="margin-bottom: 10px;">
+                <button onclick="newPrompt()" style="width: 100%; margin-bottom: 10px;">+ Nuovo Prompt</button>
+                <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                    <button onclick="exportPrompts()" class="secondary" style="flex: 1; font-size: 12px;">Esporta JSON</button>
+                    <button onclick="triggerImport()" class="secondary" style="flex: 1; font-size: 12px;">Importa JSON</button>
+                    <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importPrompts(this.files[0])">
+                </div>
+                <ul id="prompt-list" class="item-list" style="overflow-y: auto; flex: 1;"></ul>
+                </div>
+                <div style="flex: 1; overflow-y: auto; padding-right: 10px;">
+                    <input type="hidden" id="prompt-id">
+                    <div class="form-group">
+                        <label>Nome Prompt</label>
+                        <input type="text" id="prompt-name" placeholder="Es. Post Educativo">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <input type="text" id="prompt-category" list="categories" placeholder="Es. Marketing">
+                        <datalist id="categories">
+                            <option value="Promozionale">
+                            <option value="Educativo">
+                            <option value="Engagement">
+                            <option value="Personale">
+                            <option value="Tech News">
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrizione</label>
+                        <input type="text" id="prompt-description" placeholder="Breve descrizione dell'uso">
+                    </div>
+                    <div class="form-group">
+                        <label>Contenuto Prompt</label>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 5px;">Usa <code>{topic}</code> e <code>{summary}</code> come segnaposto per il contenuto dinamico.</div>
+                        <textarea id="prompt-content" style="height: 300px; font-family: monospace; line-height: 1.4;"></textarea>
+                    </div>
+                    
+                    <div style="margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                            <label>Anteprima (con dati attuali)</label>
+                            <button onclick="previewPrompt()" class="secondary" style="padding: 2px 8px; font-size: 12px;">Aggiorna Anteprima</button>
+                        </div>
+                        <div id="prompt-preview" style="background: #f8f9fa; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; white-space: pre-wrap; max-height: 150px; overflow-y: auto;">
+                            Clicca "Aggiorna Anteprima" per vedere il risultato con i dati attuali.
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button onclick="deletePrompt()" class="secondary" style="background: #dc3545;">Elimina</button>
+                        <button onclick="savePrompt()" class="success">Salva Prompt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load list on start
+        loadList();
+        loadNews();
+        loadPrompts(); // Load prompts for select dropdown
+
+        let allPrompts = [];
+
+        async function loadPrompts() {
+            try {
+                const res = await fetch('/api/cms/prompts');
+                if (!res.ok) return;
+                allPrompts = await res.json();
+                renderPromptSelect();
+                renderPromptList();
+            } catch (e) {
+                console.error("Failed to load prompts", e);
+            }
+        }
+
+        function exportPrompts() {
+            window.location.href = '/api/cms/prompts/export';
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file').click();
+        }
+
+        async function importPrompts(file) {
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    const res = await fetch('/api/cms/prompts/import', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(json)
+                    });
+                    if (!res.ok) throw new Error('Errore importazione');
+                    alert('Importazione completata!');
+                    await loadPrompts();
+                    // Reset input
+                    document.getElementById('import-file').value = '';
+                } catch (err) {
+                    alert('Errore: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderPromptSelect() {
+            const select = document.getElementById('prompt-select');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Default (LinkedIn Standard)</option>';
+            allPrompts.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.name} (${p.category})`;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        function renderPromptList() {
+            const list = document.getElementById('prompt-list');
+            const search = document.getElementById('prompt-search').value.toLowerCase();
+            list.innerHTML = '';
+            
+            allPrompts
+                .filter(p => p.name.toLowerCase().includes(search) || p.category.toLowerCase().includes(search))
+                .forEach(p => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div style="font-weight: bold;">${p.name}</div>
+                        <div style="font-size: 12px; color: #666;">${p.category}</div>
+                    `;
+                    li.onclick = () => selectPromptForEdit(p);
+                    list.appendChild(li);
+                });
+        }
+
+        function filterPrompts() {
+            renderPromptList();
+        }
+
+        function openPromptManager() {
+            document.getElementById('prompt-modal').style.display = 'flex';
+            newPrompt();
+        }
+
+        function closePromptManager() {
+            document.getElementById('prompt-modal').style.display = 'none';
+        }
+
+        function newPrompt() {
+            document.getElementById('prompt-id').value = '';
+            document.getElementById('prompt-name').value = '';
+            document.getElementById('prompt-category').value = '';
+            document.getElementById('prompt-description').value = '';
+            document.getElementById('prompt-content').value = `Crea un post LinkedIn professionale su '{topic}'.
+Sommario: {summary}
+
+Requisiti:
+1. Lunghezza: 1300-2000 caratteri.
+2. Tono: Professionale ma coinvolgente.
+3. Formattazione: Usa elenchi puntati.
+4. Hashtag: Includi 3-5 hashtag rilevanti.
+5. CTA: Includi una domanda per stimolare i commenti.
+6. Lingua: Italiano.
+
+Restituisci SOLO il testo del post.`;
+            document.getElementById('prompt-preview').textContent = 'Clicca "Aggiorna Anteprima" per vedere il risultato con i dati attuali.';
+        }
+
+        function selectPromptForEdit(p) {
+            document.getElementById('prompt-id').value = p.id;
+            document.getElementById('prompt-name').value = p.name;
+            document.getElementById('prompt-category').value = p.category;
+            document.getElementById('prompt-description').value = p.description;
+            document.getElementById('prompt-content').value = p.content;
+            previewPrompt();
+        }
+
+        function previewPrompt() {
+            let content = document.getElementById('prompt-content').value;
+            // Get current analysis data if available, otherwise use placeholders
+            const topic = document.getElementById('topic-input').value || '[ARGOMENTO]';
+            const summary = document.getElementById('summary-input').value || '[SOMMARIO]';
+            
+            // Simple replacement
+            content = content.replace(/{topic}/g, topic).replace(/{summary}/g, summary);
+            document.getElementById('prompt-preview').textContent = content;
+        }
+
+        async function savePrompt() {
+            const id = document.getElementById('prompt-id').value;
+            const name = document.getElementById('prompt-name').value;
+            const category = document.getElementById('prompt-category').value;
+            const description = document.getElementById('prompt-description').value;
+            const content = document.getElementById('prompt-content').value;
+
+            if (!name || !content) {
+                alert('Nome e Contenuto sono obbligatori');
+                return;
+            }
+
+            // Validation: Check for placeholders
+            if (!content.includes('{topic}') && !content.includes('{summary}')) {
+                if (!confirm('Il prompt non contiene {topic} o {summary}. Potrebbe non funzionare come previsto. Continuare?')) {
+                    return;
+                }
+            }
+
+            const method = id ? 'PUT' : 'POST';
+            const body = { id, name, category, description, content };
+
+            try {
+                const res = await fetch('/api/cms/prompts', {
+                    method: method,
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error('Errore nel salvataggio');
+                
+                await loadPrompts(); // Reload list
+                alert('Prompt salvato!');
+                if (!id) newPrompt(); // Reset if it was a new one
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function deletePrompt() {
+            const id = document.getElementById('prompt-id').value;
+            if (!id) return;
+            if (!confirm('Eliminare questo prompt?')) return;
+
+            try {
+                const res = await fetch(`/api/cms/prompts?id=${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Errore nella cancellazione');
+                await loadPrompts();
+                alert('Prompt eliminato!');
+                newPrompt();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function createNew() {
+            document.getElementById('input-section').style.display = 'block';
+            document.getElementById('analysis-section').style.display = 'none';
+            document.getElementById('preview-section').style.display = 'none';
+            document.getElementById('url-input').value = '';
+            document.getElementById('text-input').value = '';
+            document.getElementById('current-id').value = '';
+            document.getElementById('status-display').textContent = '';
+            document.getElementById('status-display').className = 'status-badge';
+        }
+
+        async function deleteItem() {
+            const id = document.getElementById('current-id').value;
+            if (!id) return;
+            
+            if (!confirm('Sei sicuro di voler eliminare definitivamente questa bozza?')) return;
+            
+            try {
+                const res = await fetch('/api/cms/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id})
+                });
+                
+                if (!res.ok) throw new Error('Errore durante l\'eliminazione');
+                
+                alert('Bozza eliminata!');
+                createNew();
+                loadList();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function loadList() {
+            try {
+                const res = await fetch('/api/cms/list');
+                const items = await res.json();
+                const list = document.getElementById('item-list');
+                list.innerHTML = '';
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div style="font-weight: bold;">${item.topic || 'Senza titolo'}</div>
+                        <div style="font-size: 12px; color: #666;">
+                            <span class="status-badge status-${item.status}">${item.status}</span>
+                            ${new Date(item.updated_at).toLocaleDateString()}
+                        </div>
+                    `;
+                    li.onclick = () => loadItem(item.id);
+                    list.appendChild(li);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadNews() {
+            const list = document.getElementById('news-list');
+            list.innerHTML = '<li style="color: #666; font-style: italic;">Caricamento...</li>';
+            
+            try {
+                const res = await fetch('/api/news');
+                let news = await res.json();
+                
+                // Sort by published desc (newest first)
+                // Assuming published string format is parseable or standard date string.
+                // The sample showed "Fri, 20 Feb 2026..." which Date.parse handles.
+                news.sort((a, b) => new Date(b.published) - new Date(a.published));
+                
+                // Filter for tech related
+                const keywords = ['tech', 'ai', 'artificial intelligence', 'cyber', 'digital', 'musk', 'google', 'apple', 'microsoft', 'internet', 'software', 'hardware', 'startup', 'crypto', 'bitcoin', 'blockchain', 'meta', 'amazon', 'nvidia', 'chatgpt', 'openai', 'gemini', 'claude', 'data'];
+                
+                const techNews = news.filter(n => {
+                    const content = (n.title + ' ' + n.summary).toLowerCase();
+                    return keywords.some(k => content.includes(k));
+                });
+                
+                list.innerHTML = '';
+                
+                if (techNews.length === 0) {
+                    list.innerHTML = '<li style="color: #999;">Nessuna news tech trovata</li>';
+                    return;
+                }
+                
+                techNews.forEach(n => {
+                    const li = document.createElement('li');
+                    li.style.cursor = 'default';
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.style.fontWeight = 'bold';
+                    titleDiv.style.fontSize = '13px';
+                    titleDiv.style.marginBottom = '3px';
+                    titleDiv.textContent = n.title;
+                    
+                    const metaDiv = document.createElement('div');
+                    metaDiv.style.fontSize = '11px';
+                    metaDiv.style.color = '#666';
+                    metaDiv.style.marginBottom = '8px';
+                    metaDiv.textContent = `${new Date(n.published).toLocaleDateString()} - ${n.source}`;
+                    
+                    const btnContainer = document.createElement('div');
+                    btnContainer.style.display = 'flex';
+                    btnContainer.style.gap = '5px';
+                    
+                    const readBtn = document.createElement('button');
+                    readBtn.className = 'secondary';
+                    readBtn.style.fontSize = '11px';
+                    readBtn.style.padding = '4px 8px';
+                    readBtn.style.flex = '1';
+                    readBtn.style.background = '#6c757d';
+                    readBtn.textContent = '📖 Leggi';
+                    readBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        window.open(n.link, '_blank');
+                    };
+                    
+                    const createBtn = document.createElement('button');
+                    createBtn.className = 'secondary';
+                    createBtn.style.fontSize = '11px';
+                    createBtn.style.padding = '4px 8px';
+                    createBtn.style.flex = '1';
+                    createBtn.style.background = '#0077b5';
+                    createBtn.textContent = '📝 Crea Post';
+                    createBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        createNew();
+                        document.getElementById('url-input').value = n.link || '';
+                        document.getElementById('text-input').value = `${n.title}\n\n${n.summary || ''}`;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                    
+                    btnContainer.appendChild(createBtn);
+                    btnContainer.appendChild(readBtn);
+                    
+                    li.appendChild(titleDiv);
+                    li.appendChild(metaDiv);
+                    li.appendChild(btnContainer);
+                    
+                    li.title = n.summary || '';
+                    list.appendChild(li);
+                });
+                
+            } catch (e) {
+                console.error("Error loading news:", e);
+                list.innerHTML = `<li style="color: red;">Errore caricamento: ${e.message}</li>`;
+            }
+        }
+
+        async function loadItem(id) {
+            try {
+                const res = await fetch(`/api/cms/get?id=${id}`);
+                const item = await res.json();
+                
+                document.getElementById('current-id').value = item.id;
+                document.getElementById('topic-input').value = item.topic || '';
+                document.getElementById('summary-input').value = item.summary || '';
+                document.getElementById('post-output').value = item.post_text || '';
+                
+                const statusBadge = document.getElementById('status-display');
+                statusBadge.textContent = item.status;
+                statusBadge.className = `status-badge status-${item.status}`;
+                
+                updateCharCount();
+                renderComments(item.comments);
+                renderHistory(item.history);
+                
+                document.getElementById('input-section').style.display = 'none';
+                document.getElementById('analysis-section').style.display = 'block';
+                document.getElementById('preview-section').style.display = 'block';
+            } catch (e) {
+                console.error("Error loading item:", e);
+                alert("Errore nel caricamento del post: " + e);
+            }
+        }
+
+        function renderComments(comments) {
+            const list = document.getElementById('comments-list');
+            list.innerHTML = '';
+            if (!comments || comments.length === 0) {
+                list.innerHTML = '<div style="color:#999; font-style:italic;">Nessun commento</div>';
+                return;
+            }
+            comments.forEach(c => {
+                const div = document.createElement('div');
+                div.style.borderBottom = '1px solid #eee';
+                div.style.padding = '5px 0';
+                div.innerHTML = `
+                    <div style="font-weight:bold; font-size:12px;">${c.author} <span style="font-weight:normal; color:#999;">${new Date(c.timestamp).toLocaleString()}</span></div>
+                    <div>${c.text}</div>
+                `;
+                list.appendChild(div);
+            });
+            list.scrollTop = list.scrollHeight;
+        }
+
+        function renderHistory(history) {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            if (!history || history.length === 0) {
+                list.innerHTML = '<li style="color: #999;">Nessuna revisione</li>';
+                return;
+            }
+            history.forEach((h, index) => {
+                const li = document.createElement('li');
+                li.style.fontSize = '12px';
+                li.innerHTML = `Revisione #${index + 1} - ${new Date(h.timestamp).toLocaleString()} (${h.post_text.length} car.)`;
+                list.appendChild(li);
+            });
+        }
+
+        async function analyzeContent() {
+            const url = document.getElementById('url-input').value;
+            const text = document.getElementById('text-input').value;
+            
+            if (!url && !text) {
+                alert('Inserisci un URL o del testo');
+                return;
+            }
+
+            const btn = document.querySelector('button[onclick="analyzeContent()"]');
+            const originalText = btn.textContent;
+            btn.textContent = 'Analisi in corso...';
+            btn.classList.add('loading');
+
+            try {
+                const res = await fetch('/api/cms/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({input: url || text})
+                });
+                const data = await res.json();
+                
+                document.getElementById('topic-input').value = data.topic;
+                document.getElementById('summary-input').value = data.summary;
+                if (data.id) {
+                    document.getElementById('current-id').value = data.id;
+                }
+                
+                document.getElementById('analysis-section').style.display = 'block';
+            } catch (e) {
+                alert('Errore analisi: ' + e);
+            } finally {
+                btn.textContent = originalText;
+                btn.classList.remove('loading');
+            }
+        }
+
+        async function generatePost() {
+            const id = document.getElementById('current-id').value;
+            const topic = document.getElementById('topic-input').value;
+            const summary = document.getElementById('summary-input').value;
+            const promptId = document.getElementById('prompt-select').value;
+            const url = document.getElementById('url-input').value;
+
+            if (!id && !topic) {
+                alert('Esegui prima l\'analisi o inserisci un argomento');
+                return;
+            }
+
+            const btn = document.querySelector('button[onclick="generatePost()"]');
+            const originalText = btn.textContent;
+            btn.textContent = 'Generazione con AI in corso...';
+            btn.classList.add('loading');
+
+            try {
+                // First update the item with current topic/summary if we have an ID
+                if (id) {
+                    await fetch('/api/cms/update', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({id, topic, summary})
+                    });
+                } else {
+                    // If no ID (manual entry without analysis), create first
+                    const res = await fetch('/api/cms/analyze', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({input: topic || url}) // Use topic as input if url empty
+                    });
+                    const item = await res.json();
+                    document.getElementById('current-id').value = item.id;
+                    // Update summary if manually entered
+                    if (summary) {
+                         await fetch('/api/cms/update', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({id: item.id, topic, summary})
+                        });
+                    }
+                }
+
+                const currentId = document.getElementById('current-id').value;
+
+                const res = await fetch('/api/cms/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: currentId, prompt_id: promptId})
+                });
+                const item = await res.json();
+                
+                // Load the full item to ensure all fields are populated correctly
+                await loadItem(item.id);
+                loadList(); // Refresh sidebar list
+            } catch (e) {
+                alert('Errore generazione: ' + e);
+            } finally {
+                btn.textContent = originalText;
+                btn.classList.remove('loading');
+            }
+        }
+
+        async function uploadMedia(file) {
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const preview = document.getElementById('media-preview');
+            preview.innerHTML = 'Caricamento...';
+            
+            try {
+                const res = await fetch('/api/cms/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (!res.ok) throw new Error('Upload fallito');
+                const data = await res.json();
+                
+                document.getElementById('media-path').value = data.path;
+                document.getElementById('media-type').value = data.type;
+                document.getElementById('media-url').value = data.url;
+                
+                renderMediaPreview(data.url, data.type);
+                await saveChanges(true); // Auto-save silently
+            } catch (e) {
+                alert(e);
+                preview.innerHTML = '';
+            }
+        }
+
+        function renderMediaPreview(url, type) {
+            const preview = document.getElementById('media-preview');
+            if (!url) {
+                preview.innerHTML = '';
+                return;
+            }
+            
+            if (type && type.startsWith('image/')) {
+                preview.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 300px; border-radius: 4px;">`;
+            } else if (type && type.startsWith('video/')) {
+                preview.innerHTML = `<video src="${url}" controls style="max-width: 100%; max-height: 300px; border-radius: 4px;"></video>`;
+            } else {
+                preview.innerHTML = `<a href="${url}" target="_blank">Vedi File Allegato</a>`;
+            }
+        }
+
+        async function saveChanges(silent = false) {
+            const id = document.getElementById('current-id').value;
+            if (!id) return;
+            
+            const postText = document.getElementById('post-output').value;
+            const mediaPath = document.getElementById('media-path').value;
+            const mediaType = document.getElementById('media-type').value;
+            const mediaUrl = document.getElementById('media-url').value;
+            
+            try {
+                await fetch('/api/cms/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id, 
+                        post_text: postText,
+                        media_path: mediaPath,
+                        media_type: mediaType,
+                        media_url: mediaUrl
+                    })
+                });
+                // Reload to see history update
+                await loadItem(id);
+                await loadList();
+                if (!silent) alert('Bozza salvata!');
+            } catch (e) {
+                alert('Errore salvataggio: ' + e);
+            }
+        }
+
+        async function addComment() {
+            const id = document.getElementById('current-id').value;
+            const comment = document.getElementById('comment-input').value;
+            if (!id || !comment) return;
+
+            try {
+                await fetch('/api/cms/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id, 
+                        comment
+                    })
+                });
+                document.getElementById('comment-input').value = '';
+                await loadItem(id); // Reload to show new comment
+            } catch (e) {
+                alert('Errore invio commento: ' + e);
+            }
+        }
+
+        async function updateStatus(status) {
+            const id = document.getElementById('current-id').value;
+            if (!id) return;
+
+            if (!confirm(`Sei sicuro di voler impostare lo stato a ${status}?`)) return;
+
+            try {
+                await fetch('/api/cms/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id, 
+                        status
+                    })
+                });
+                await loadItem(id);
+                loadList();
+            } catch (e) {
+                alert('Errore aggiornamento stato: ' + e);
+            }
+        }
+        
+        async function publishToLinkedin() {
+             const text = document.getElementById('post-output').value;
+             const id = document.getElementById('current-id').value;
+             const mediaPath = document.getElementById('media-path').value;
+             const mediaType = document.getElementById('media-type').value;
+             const authorUrn = document.getElementById('author-select').value;
+             
+             if (!confirm('Sei sicuro di voler pubblicare questo post su LinkedIn ora?')) return;
+             
+             const btn = document.querySelector('button[onclick="publishToLinkedin()"]');
+             const originalText = btn.textContent;
+             btn.textContent = 'Pubblicazione in corso...';
+             btn.disabled = true;
+
+             try {
+                 // First save any changes (including text edits)
+                 if (id) {
+                    await saveChanges(true); // Silent save
+                 }
+
+                 const payload = {
+                    text: text,
+                    media_path: mediaPath,
+                    media_type: mediaType,
+                    author_urn: authorUrn
+                 };
+
+                 const res = await fetch('/api/linkedin/post', {
+                     method: 'POST',
+                     headers: {'Content-Type': 'application/json'},
+                     body: JSON.stringify(payload)
+                 });
+                 const data = await res.json();
+                 
+                 if (data.status === 'success' || (data.content && !data.error)) {
+                     alert('Pubblicato con successo!');
+                     if (id) {
+                        await updateStatus('PUBLISHED');
+                     }
+                 } else {
+                     alert('Errore pubblicazione: ' + (data.error || JSON.stringify(data)));
+                 }
+             } catch (e) {
+                 alert('Errore di rete: ' + e);
+             } finally {
+                 btn.textContent = originalText;
+                 btn.disabled = false;
+             }
+        }
+
+        function updateCharCount() {
+            const len = document.getElementById('post-output').value.length;
+            const el = document.getElementById('char-count');
+            el.textContent = len;
+            if (len >= 1300 && len <= 2000) el.style.color = 'green';
+            else el.style.color = 'red';
+        }
+
+        function cleanFormatting() {
+            const textarea = document.getElementById('post-output');
+            let text = textarea.value;
+
+            // Remove bold/italic markers (**text**, *text*, __text__, _text_)
+            text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+            text = text.replace(/\*(.*?)\*/g, '$1');
+            text = text.replace(/__(.*?)__/g, '$1');
+            text = text.replace(/_(.*?)_/g, '$1');
+
+            // Convert list items (* item or - item) to bullet points (• item)
+            text = text.replace(/^\s*[\-\*]\s+/gm, '• ');
+
+            // Clean up headers (### Title -> TITLE)
+            text = text.replace(/^#+\s*(.*$)/gm, (match, p1) => p1.toUpperCase());
+            
+            // Remove markdown links [text](url) -> text
+            text = text.replace(/\[(.*?)\]\(.*?\)/g, '$1');
+
+            // Normalize newlines (max 2)
+            text = text.replace(/\n{3,}/g, '\n\n');
+
+            textarea.value = text;
+            updateCharCount();
+        }
+
+        async function loadCompanies() {
+            const select = document.getElementById('author-select');
+            select.innerHTML = '<option value="">Caricamento...</option>';
+
+            try {
+                const res = await fetch('/api/linkedin/companies');
+                const companies = await res.json();
+                
+                select.innerHTML = '';
+                
+                if (companies.error) {
+                     const opt = document.createElement('option');
+                     opt.text = "Errore: " + companies.error;
+                     select.add(opt);
+                     return;
+                }
+
+                companies.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.text = c.name;
+                    if (c.disabled) opt.disabled = true;
+                    select.add(opt);
+                });
+            } catch (e) {
+                console.error("Error loading companies:", e);
+                select.innerHTML = '<option value="">Errore caricamento aziende</option>';
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadList();
+            loadPrompts();
+            loadCompanies();
+
+            // Check for SessionStorage data (from Home Page News Feed)
+            const storedData = sessionStorage.getItem('cms_post_data');
+            if (storedData) {
+                try {
+                    const data = JSON.parse(storedData);
+                    if (data.url) document.getElementById('url-input').value = data.url;
+                    if (data.text) document.getElementById('text-input').value = data.text;
+                    // Clear after use
+                    sessionStorage.removeItem('cms_post_data');
+                } catch(e) { console.error(e); }
+            } 
+            // Fallback: Check for URL parameter
+            else {
+                const urlParams = new URLSearchParams(window.location.search);
+                const url = urlParams.get('url');
+                if (url) {
+                    document.getElementById('url-input').value = url;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

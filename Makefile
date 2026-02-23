@@ -116,17 +116,21 @@ uninstall-all:
 	@echo "Removed workspace: $(PICOCLAW_HOME)"
 	@echo "Complete uninstallation done!"
 
-## clean: Remove build artifacts
+## clean: Remove build directory
 clean:
-	@echo "Cleaning build artifacts..."
+	@echo "Cleaning..."
 	@rm -rf $(BUILD_DIR)
-	@echo "Clean complete"
 
 ## vet: Run go vet for static analysis
 vet:
 	@$(GO) vet ./...
 
-## fmt: Format Go code
+## run: Build and run the gateway
+run: build
+	@echo "Running $(BINARY_NAME)..."
+	@./$(BINARY_PATH) gateway --config config/config.json
+
+## test: Run tests
 test:
 	@$(GO) test ./...
 
@@ -147,9 +151,9 @@ update-deps:
 ## check: Run vet, fmt, and verify dependencies
 check: deps fmt vet test
 
-## run: Build and run picoclaw
-run: build
-	@$(BUILD_DIR)/$(BINARY_NAME) $(ARGS)
+## run-args: Build and run picoclaw with arguments (usage: make run-args ARGS="...")
+run-args: build
+	@$(BINARY_PATH) $(ARGS)
 
 ## help: Show this help message
 help:

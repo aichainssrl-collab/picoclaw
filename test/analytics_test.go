@@ -44,7 +44,7 @@ func TestWebChatAnalytics(t *testing.T) {
 	assert.NoError(t, err)
 
 	// 3. Crea e avvia il canale WebChat
-	channel, err := channels.NewWebChatChannel(cfg, messageBus, tempDir)
+	channel, err := channels.NewWebChatChannel(cfg, messageBus, tempDir, nil)
 	assert.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())

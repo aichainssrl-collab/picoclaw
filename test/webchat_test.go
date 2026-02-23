@@ -24,7 +24,7 @@ func TestWebChatChannel(t *testing.T) {
 
 	// 2. Crea e avvia il canale WebChat
 	tempDir := t.TempDir()
-	channel, err := channels.NewWebChatChannel(cfg, messageBus, tempDir)
+	channel, err := channels.NewWebChatChannel(cfg, messageBus, tempDir, nil)
 	assert.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())

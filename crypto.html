@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Dashboard - Aichian</title>
+    <link rel="icon" type="image/png" href="/assets/clawdchat-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    
+    <script src="assets/js/components/crypto-ticker.js?v=3"></script>
+    <script src="assets/js/components/weather-widget.js?v=2"></script>
+    <script src="assets/js/components/chat-widget.js?v=3"></script>
+
+    <style>
+        .header { background: white; padding: 15px 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .header h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+        .nav-menu { display: flex; gap: 20px; }
+        .nav-link { text-decoration: none; color: #666; font-weight: 500; padding: 5px 10px; border-radius: 4px; transition: all 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #f7931a; background: #fff8e1; }
+        
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1600px; margin: 0 auto; padding: 0; background: #f5f5f5; }
+        .container { padding: 20px; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>
+            <span style="font-size: 24px;">🦀</span> 
+            Aichian Crypto
+        </h1>
+        <nav class="nav-menu">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/linkedin/cms" class="nav-link">LinkedIn CMS</a>
+            <a href="/crypto" class="nav-link active">Crypto</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2>Crypto Market Overview</h2>
+        <crypto-ticker></crypto-ticker>
+        
+        <!-- Placeholder for more crypto content -->
+        <div style="margin-top: 40px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3>Market Analysis</h3>
+            <p>Real-time data provided by CoinGecko API.</p>
+            <div id="chart-container" style="height: 400px; background: #f9f9f9; display: flex; align-items: center; justify-content: center; color: #999;">
+                Chart Placeholder
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Widget -->
+    <div style="position: fixed; bottom: 20px; right: 20px;">
+        <chat-widget></chat-widget>
+    </div>
+</body>
+</html>
